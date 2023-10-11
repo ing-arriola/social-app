@@ -1,6 +1,7 @@
 import { sql } from "@/db";
 import { NextResponse } from "next/server"
 import bcrypt from 'bcrypt'
+import { SignJWT } from 'jose'
 
 export const POST = async (request:Request) => {
     const json = await request.json()
@@ -13,5 +14,17 @@ export const POST = async (request:Request) => {
     if(!match){
         return NextResponse.json({error:"invalid credentials"},{status:401})
     }
-    return NextResponse.json({data: res.rows[0]});
+     const token = await new SignJWT({})
+        .setProtectedHeader({alg:'HS256'})
+        .setSubject(user.id)
+        .setIssuedAt()
+        .setExpirationTime('2w')
+        .sign(new TextEncoder().encode('this-1s-4-S3cret!'))
+    const response = NextResponse.json({msg:"login success"})
+    response.cookies.set("jwt-token",token,{
+        sameSite:"strict",
+        httpOnly:true,
+        secure:true
+    })
+    return response;
 }
